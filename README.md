@@ -16,7 +16,7 @@ A separate Next.js repository and Vercel project for administering the existing 
 
 All admin pages use a server-only data access layer. Every page/data read and every Server Action calls `requireAdmin()`. This verifies the actual Supabase user, Google provider and a live database role check. The protected layout is an additional guard, not the sole guard.
 
-Every privileged SQL function rechecks Google + `profiles.is_superadmin` on the authenticated database session. Functions have an empty search path and explicit EXECUTE grants. Anonymous callers cannot execute them. Normal members cannot read other profiles, view admin statistics, mutate admin media, or promote themselves.
+Every privileged SQL function rechecks Google identity metadata + OAuth session AMR + `profiles.is_superadmin` on the authenticated database session. A password-only session is rejected even for a Google-linked admin. Functions have an empty search path and explicit EXECUTE grants. Anonymous callers cannot execute them. Normal members cannot read other profiles, view admin statistics, mutate admin media, or promote themselves. See the official [Supabase JWT claims reference](https://supabase.com/docs/guides/auth/jwt-fields).
 
 Only the existing Supabase URL and anon key are configured in Vercel. No service-role key is used anywhere in this app. Cookies stay server-side; privileged data is never embedded on the public login page. Robots are disabled.
 

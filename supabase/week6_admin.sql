@@ -13,6 +13,7 @@ end $$;
 create trigger protect_superadmin_flag before insert or update on public.profiles for each row execute function public.protect_superadmin_flag();
 create function public.is_superadmin() returns boolean language sql stable security definer set search_path='' as $$
   select coalesce((auth.jwt()->'app_metadata'->>'provider')='google',false)
+    and exists(select 1 from jsonb_array_elements(coalesce(auth.jwt()->'amr','[]'::jsonb)) a where a->>'method'='oauth')
     and exists(select 1 from public.profiles p where p.id=auth.uid() and p.is_superadmin);
 $$;
 revoke all on function public.is_superadmin() from public;

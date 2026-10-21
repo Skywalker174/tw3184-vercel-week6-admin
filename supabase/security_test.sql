@@ -1,7 +1,7 @@
 -- Run as the database owner after approving ONE bootstrap administrator.
 -- All writes, including test media/votes/bookmarks, are rolled back.
 begin;
-select set_config('request.jwt.claims',jsonb_build_object('sub',(select id from public.profiles where not is_superadmin order by created_at limit 1),'app_metadata',jsonb_build_object('provider','google'))::text,true);
+select set_config('request.jwt.claims',jsonb_build_object('sub',(select id from public.profiles where not is_superadmin order by created_at limit 1),'app_metadata',jsonb_build_object('provider','google'),'amr',jsonb_build_array(jsonb_build_object('method','oauth')))::text,true);
 set local role authenticated;
 do $$ begin
   if public.is_superadmin() then raise exception 'Ordinary member passed role gate'; end if;
@@ -16,18 +16,29 @@ do $$ begin
   if public.is_superadmin() then raise exception 'Profile upsert changed role'; end if;
 end $$;
 set local role postgres;
-select set_config('request.jwt.claims',jsonb_build_object('sub',(select id from public.profiles where is_superadmin limit 1),'app_metadata',jsonb_build_object('provider','email'))::text,true);
+select set_config('request.jwt.claims',jsonb_build_object('sub',(select id from public.profiles where is_superadmin limit 1),'app_metadata',jsonb_build_object('provider','email'),'amr',jsonb_build_array(jsonb_build_object('method','oauth')))::text,true);
 set local role authenticated;
 do $$ begin
   if public.is_superadmin() then raise exception 'Non-Google login passed'; end if;
   begin perform public.admin_overview(); raise exception 'Non-Google admin leaked'; exception when insufficient_privilege then null; end;
 end $$;
 set local role postgres;
-select set_config('request.jwt.claims',jsonb_build_object('sub',(select id from public.profiles where is_superadmin limit 1),'app_metadata',jsonb_build_object('provider','google'))::text,true);
+select set_config('request.jwt.claims',jsonb_build_object('sub',(select id from public.profiles where is_superadmin limit 1),'app_metadata',jsonb_build_object('provider','google'),'amr',jsonb_build_array(jsonb_build_object('method','password')))::text,true);
+set local role authenticated;
+do $$ begin
+  if public.is_superadmin() then raise exception 'Password-only session passed'; end if;
+  begin perform public.admin_overview(); raise exception 'Password-only session leaked'; exception when insufficient_privilege then null; end;
+end $$;
+set local role postgres;
+select set_config('request.jwt.claims',jsonb_build_object('sub',(select id from public.profiles where is_superadmin limit 1),'app_metadata',jsonb_build_object('provider','google'),'amr',jsonb_build_array(jsonb_build_object('method','oauth')))::text,true);
 set local role authenticated;
 do $$ declare source jsonb; post_id uuid; detail jsonb; trash_id uuid; old_version text;
 begin
   if not public.is_superadmin() then raise exception 'Approved Google admin denied'; end if;
+  insert into public.profiles(id,first_name,last_name,avatar_url,updated_at)
+  values(auth.uid(),'Rollback','Admin',null,now()) on conflict(id) do update
+    set id=excluded.id,first_name=excluded.first_name,last_name=excluded.last_name,avatar_url=excluded.avatar_url,updated_at=excluded.updated_at;
+  if not public.is_superadmin() then raise exception 'Profile upsert removed admin flag'; end if;
   perform public.admin_overview(); perform public.admin_list('profiles'); perform public.admin_list('ratings');
   select item into source from jsonb_array_elements(public.admin_list('media')->'rows') item where item->>'image_path' is not null limit 1;
   if source is null then raise exception 'Need an existing AI image for rollback CRUD test'; end if;
