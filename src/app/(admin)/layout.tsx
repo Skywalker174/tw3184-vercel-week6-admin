@@ -1,0 +1,5 @@
+import Link from "next/link";
+import { requireAdmin } from "@/lib/admin";
+import { signOut } from "../auth/actions";
+import { Nav } from "@/components/nav";
+export default async function AdminLayout({children}:{children:React.ReactNode}){const {user}=await requireAdmin();return <div className="workspace"><aside className="sidebar"><Link className="brand" href="/"><span>O↗</span><div>Oddly Admin<small>TW3184 / WEEK 6</small></div></Link><p className="navLabel">WORKSPACE</p><Nav/><div className="sidebarFoot"><span className="secure">● Superadmin session</span><p>{user.email}</p><form action={signOut}><button>Sign out ↗</button></form></div></aside><div className="mainArea"><header className="topbar"><span>Oddly Funny <b>/</b> Operations console</span><a href="https://week-1-hello-world-vercel.vercel.app/campus" target="_blank" rel="noreferrer">View rating app ↗</a></header>{children}<footer className="adminFooter">Protected by Google OAuth + live database role checks. All media writes are audited.</footer></div></div>;}

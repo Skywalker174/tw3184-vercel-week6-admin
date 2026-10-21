@@ -1,0 +1,7 @@
+import Link from "next/link";
+import { list,requireAdmin,date,pageNumber,type Media } from "@/lib/admin";
+import { Search,Pages,Empty } from "@/components/list";
+export default async function MediaLibrary({searchParams}:{searchParams:Promise<{q?:string;page?:string}>}){const {db}=await requireAdmin();const {q="",page:p}=await searchParams,page=pageNumber(p);const {rows,total}=await list<Media>("media",q,page);return <main className="content"><div className="pageHead"><div><p className="eyebrow">CONTENT LIBRARY</p><h1>The work, in one place.</h1><p>Inspect prompts, curate captions, and manage AI-generated media.</p></div><Link className="primary" href="/media/new">Register AI media +</Link></div><Search q={q} total={total} label="media"/>{!rows.length?<Empty/>:<div className="mediaGrid">{rows.map(m=><article className="mediaCard" key={m.id}>{m.image_path?
+      // Public asset only. Admin data is never loaded until role checks pass.
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={db.storage.from("funny-images").getPublicUrl(m.image_path).data.publicUrl} alt={`AI generated: ${m.scene}`} width={768} height={768}/>:<div className="textAsset">✦<span>AI TEXT</span></div>}<div><span className="pill">{m.image_path?"AI IMAGE + CAPTION":"AI TEXT"}</span><h2>{m.caption}</h2><p className="fine">{m.author}<br/>{date(m.created_at)}</p><div className="split"><small>↑ {m.upvotes} · ↓ {m.downvotes}</small><Link href={`/media/${m.id}`}>Inspect & edit →</Link></div></div></article>)}</div>}<Pages page={page} total={total} q={q}/></main>;}

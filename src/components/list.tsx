@@ -1,0 +1,4 @@
+import Link from "next/link";
+export function Search({q,total,label}:{q:string;total:number;label:string}){return <div className="listTools"><p>{total} {label}</p><form><label className="srOnly" htmlFor="q">Search {label}</label><input id="q" name="q" defaultValue={q} placeholder={`Search ${label}…`} maxLength={120}/><button>Search</button>{q&&<Link href="?">Clear</Link>}</form></div>;}
+export function Pages({page,total,q}:{page:number;total:number;q:string}){return <nav className="pages" aria-label="Pagination">{page>1&&<Link href={`?q=${encodeURIComponent(q)}&page=${page-1}`}>← Previous</Link>}<span>Page {page} · 20 per page</span>{total>page*20&&<Link href={`?q=${encodeURIComponent(q)}&page=${page+1}`}>Next →</Link>}</nav>;}
+export function Empty({message="No matching records."}:{message?:string}){return <p className="empty">{message}</p>;}

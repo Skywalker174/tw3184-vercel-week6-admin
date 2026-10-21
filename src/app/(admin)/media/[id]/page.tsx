@@ -1,0 +1,7 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { mediaDetail,requireAdmin,date } from "@/lib/admin";
+import { MediaEditor,DeleteMedia } from "@/components/media-forms";
+export default async function EditMedia({params}:{params:Promise<{id:string}>}){const {db}=await requireAdmin();const {id}=await params,m=await mediaDetail(id);if(!m)notFound();return <main className="content"><Link className="back" href="/media">← Content library</Link><div className="pageHead"><div><p className="eyebrow">INSPECT / EDIT</p><h1>A closer look.</h1><p>Created {date(m.created_at)} · {m.id}</p></div></div><div className="editGrid"><aside className="preview">{m.image_path&&
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={db.storage.from("funny-images").getPublicUrl(m.image_path).data.publicUrl} alt={`AI generated: ${m.scene}`} width={768} height={768}/>}<p>{m.caption}</p><span className="pill">{m.model}</span><details className="dangerZone"><summary>Move to recycle bin</summary><DeleteMedia id={m.id}/></details></aside><MediaEditor key={m.version} initial={m}/></div></main>;}
