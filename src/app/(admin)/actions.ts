@@ -1,6 +1,7 @@
 "use server";
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/admin";
 export type State={message:string;ok?:boolean;id?:string};
 export async function saveMedia(_:State,form:FormData):Promise<State>{
@@ -28,7 +29,7 @@ export async function saveMedia(_:State,form:FormData):Promise<State>{
     return {message:error.code==="40001"?"Another editor changed this post. Reload before saving.":"Media could not be saved. Check your role and the field values, then retry."};
   }
   revalidatePath("/", "layout");
-  return {ok:true,id:String(data),message:operation==="create"?"AI media registered. Creation recorded in the audit log.":"Changes saved and audited. Existing votes were retained."};
+  redirect(`/media/${data}?notice=${operation==="create"?"created":"saved"}`);
 }
 export async function moveToTrash(_:State,form:FormData):Promise<State>{
   const {db}=await requireAdmin();
@@ -36,12 +37,12 @@ export async function moveToTrash(_:State,form:FormData):Promise<State>{
   const {error}=await db.rpc("admin_media",{p_operation:"delete",p_data:{id:form.get("id")}});
   if(error)return {message:"Could not move this record. Refresh and try again."};
   revalidatePath("/","layout");
-  return {ok:true,message:"Moved to the recycle bin. Media, votes and bookmarks can be restored."};
+  redirect("/trash?notice=moved");
 }
 export async function restoreMedia(_:State,form:FormData):Promise<State>{
   const {db}=await requireAdmin();
   const {error}=await db.rpc("admin_media",{p_operation:"restore",p_data:{id:form.get("id")}});
   if(error)return {message:"Restore failed. The record may already exist or its original account may be unavailable."};
   revalidatePath("/","layout");
-  return {ok:true,message:"Restored with its original votes and bookmarks."};
+  redirect("/media?notice=restored");
 }
